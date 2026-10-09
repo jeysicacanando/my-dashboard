@@ -43,6 +43,19 @@
 }
 
 /* respect users who turn animations off */
+@keyframes boot-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.boot-in {
+  animation: boot-in 0.5s ease-out backwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+.cursor { animation: blink 1s steps(1) infinite; }
+
+/* respect users who turn animations off (keep this LAST so it wins) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;
