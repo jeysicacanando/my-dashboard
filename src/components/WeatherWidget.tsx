@@ -140,14 +140,14 @@ export default function WeatherWidget() {
 
   return (
     <WidgetCard title="Weather">
-      {!reading && !failed && <p className="text-slate-500">Fetching weather...</p>}
+      {!reading && !failed && <p className="text-muted">Fetching weather...</p>}
 
       {!reading && failed && (
         <div>
-          <p className="text-slate-700">Couldn't load the weather.</p>
+          <p className="text-ink">Couldn't load the weather.</p>
           <button
             onClick={retry}
-            className="mt-2 min-h-11 rounded-lg bg-slate-900 px-4 font-medium text-white"
+            className="mt-2 min-h-11 rounded-lg bg-accent px-4 font-medium text-void"
           >
             Retry
           </button>
@@ -156,18 +156,18 @@ export default function WeatherWidget() {
 
       {reading && (
         <div>
-          <p className="text-4xl font-semibold text-slate-900">{reading.temp}°C</p>
-          <p className="text-slate-600">{describe(reading.code)}</p>
+          <p className="text-4xl font-semibold text-ink">{reading.temp}°C</p>
+          <p className="text-muted">{describe(reading.code)}</p>
           {reading.rainChance !== null && (
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted">
               Chance of rain today: {reading.rainChance}%
             </p>
           )}
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-faint">
             {location.label} · updated {updatedAt}
           </p>
           {failed && (
-            <p className="mt-1 text-sm text-amber-700">
+            <p className="mt-1 text-sm text-warn">
               Can't refresh right now. Showing saved data.
             </p>
           )}
@@ -177,21 +177,21 @@ export default function WeatherWidget() {
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           onClick={locateMe}
-          className="min-h-11 rounded-lg border border-slate-300 px-3 text-sm text-slate-700"
+          className="min-h-11 rounded-lg border border-line px-3 text-sm text-ink"
         >
           Use my location
         </button>
         {location.label !== DEFAULT_LOCATION.label && (
           <button
             onClick={() => chooseLocation(DEFAULT_LOCATION)}
-            className="min-h-11 rounded-lg px-3 text-sm text-slate-500 underline"
+            className="min-h-11 rounded-lg px-3 text-sm text-muted underline"
           >
             Back to {DEFAULT_LOCATION.label}
           </button>
         )}
       </div>
       {geoMessage && (
-        <p role="status" className="mt-2 text-sm text-slate-500">
+        <p role="status" className="mt-2 text-sm text-muted">
           {geoMessage}
         </p>
       )}

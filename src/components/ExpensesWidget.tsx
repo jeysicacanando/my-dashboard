@@ -32,7 +32,7 @@ export default function ExpensesWidget() {
 
   return (
     <WidgetCard title="Spent today">
-      <p className="text-3xl font-semibold text-slate-900">{peso.format(total / 100)}</p>
+      <p className="text-3xl font-semibold text-ink">{peso.format(total / 100)}</p>
 
       <form onSubmit={handleSubmit} className="mt-3 flex gap-2">
         <label className="flex-1">
@@ -41,7 +41,7 @@ export default function ExpensesWidget() {
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Lunch"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            className="w-full rounded-lg border border-line px-3 py-2"
           />
         </label>
         <label className="w-24">
@@ -51,21 +51,21 @@ export default function ExpensesWidget() {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="120"
             inputMode="decimal"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            className="w-full rounded-lg border border-line px-3 py-2"
           />
         </label>
         <button
           type="submit"
-          className="min-h-11 rounded-lg bg-slate-900 px-4 font-medium text-white"
+          className="min-h-11 rounded-lg bg-accent px-4 font-medium text-void"
         >
           Add
         </button>
       </form>
 
       {todays.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">No expenses yet today.</p>
+        <p className="mt-3 text-sm text-muted">No expenses yet today.</p>
       ) : (
-        <ul className="mt-3 space-y-1 text-slate-700">
+        <ul className="mt-3 space-y-1 text-ink">
           {todays.map((e) => (
             <li key={e.id} className="flex items-center justify-between gap-2">
               <span>{e.label}</span>
@@ -74,7 +74,7 @@ export default function ExpensesWidget() {
                 <button
                   onClick={() => remove(e.id)}
                   aria-label={`Delete ${e.label}`}
-                  className="min-h-11 min-w-11 text-slate-400 hover:text-red-600"
+                  className="min-h-11 min-w-11 text-faint hover:text-danger"
                 >
                   ✕
                 </button>

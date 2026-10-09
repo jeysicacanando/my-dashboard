@@ -39,7 +39,7 @@ export default function TodoWidget() {
 
   return (
     <WidgetCard title="To-do">
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-muted">
         {todos.length === 0 ? 'Nothing planned yet.' : `${doneCount} of ${todos.length} done`}
       </p>
 
@@ -50,7 +50,7 @@ export default function TodoWidget() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Pay internet"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2"
+            className="w-full rounded-lg border border-line px-3 py-2"
           />
         </label>
         <label>
@@ -58,7 +58,7 @@ export default function TodoWidget() {
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value as Priority)}
-            className="min-h-11 rounded-lg border border-slate-300 px-2 py-2"
+            className="min-h-11 rounded-lg border border-line px-2 py-2"
           >
             <option value="normal">Normal</option>
             <option value="high">High</option>
@@ -66,7 +66,7 @@ export default function TodoWidget() {
         </label>
         <button
           type="submit"
-          className="min-h-11 rounded-lg bg-slate-900 px-4 font-medium text-white"
+          className="min-h-11 rounded-lg bg-accent px-4 font-medium text-void"
         >
           Add
         </button>
@@ -82,10 +82,10 @@ export default function TodoWidget() {
                 onChange={() => toggle(t.id)}
                 className="h-5 w-5"
               />
-              <span className={t.done ? 'text-slate-400 line-through' : 'text-slate-700'}>
+              <span className={t.done ? 'text-faint line-through' : 'text-ink'}>
                 {t.text}
                 {t.priority === 'high' && (
-                  <span className="ml-2 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+                  <span className="ml-2 rounded bg-danger/20 px-1.5 py-0.5 text-xs font-medium text-danger">
                     High
                   </span>
                 )}
@@ -94,7 +94,7 @@ export default function TodoWidget() {
             <button
               onClick={() => remove(t.id)}
               aria-label={`Delete ${t.text}`}
-              className="min-h-11 min-w-11 text-slate-400 hover:text-red-600"
+              className="min-h-11 min-w-11 text-faint hover:text-danger"
             >
               ✕
             </button>
@@ -103,7 +103,7 @@ export default function TodoWidget() {
       </ul>
 
       {doneCount > 0 && (
-        <button onClick={clearDone} className="mt-2 min-h-11 text-sm text-slate-500 underline">
+        <button onClick={clearDone} className="mt-2 min-h-11 text-sm text-muted underline">
           Clear completed
         </button>
       )}
