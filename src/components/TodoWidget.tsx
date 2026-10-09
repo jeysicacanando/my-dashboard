@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import WidgetCard from './WidgetCard'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import type { Priority, Todo } from '../shared'
 
-type Priority = 'high' | 'normal'
-type Todo = { id: string; text: string; done: boolean; priority?: Priority }
+type Props = {
+  todos: Todo[]
+  setTodos: Dispatch<SetStateAction<Todo[]>>
+}
 
-export default function TodoWidget() {
-  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', [])
+export default function TodoWidget({ todos, setTodos }: Props) {
   const [text, setText] = useState('')
   const [priority, setPriority] = useState<Priority>('normal')
 

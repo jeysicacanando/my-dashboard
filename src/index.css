@@ -42,7 +42,7 @@
   background-size: 32px 32px;
 }
 
-/* respect users who turn animations off */
+
 @keyframes boot-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
@@ -55,7 +55,12 @@
 @keyframes blink { 50% { opacity: 0; } }
 .cursor { animation: blink 1s steps(1) infinite; }
 
-/* respect users who turn animations off (keep this LAST so it wins) */
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow {
+  transform-origin: 50% 50%;
+  animation: spin-slow 30s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation: none !important;

@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { Dispatch, FormEvent, SetStateAction } from 'react'
 import WidgetCard from './WidgetCard'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { peso, today } from '../shared'
+import type { Expense } from '../shared'
 
-type Expense = { id: string; label: string; centavos: number; date: string }
+type Props = {
+  expenses: Expense[]
+  setExpenses: Dispatch<SetStateAction<Expense[]>>
+}
 
-const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
-const today = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD, local time
-
-export default function ExpensesWidget() {
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>('expenses', [])
+export default function ExpensesWidget({ expenses, setExpenses }: Props) {
   const [label, setLabel] = useState('')
   const [amount, setAmount] = useState('')
 
