@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import WidgetCard from "./WidgetCard";
+import type { WeatherInfo } from "../briefing";
 
 type Place = { name: string; lat: number; lon: number };
 type HourItem = { time: string; temp: number; code: number; isDay: boolean };
@@ -13,10 +14,9 @@ type Weather = {
 };
 type Status = "loading" | "error" | "success";
 
-// App.tsx sends one of these when you type "weather <city>" in the command bar.
-// The id changes every time, so asking for the same city twice still works.
 type Props = {
   request?: { city: string; id: number } | null;
+  onReport?: (info: WeatherInfo) => void;
 };
 
 const DEFAULT_PLACE: Place = { name: "Home", lat: 14.85, lon: 121.08 };
@@ -55,7 +55,7 @@ async function findCity(name: string): Promise<Place> {
   };
 }
 
-export default function WeatherWidget({ request = null }: Props) {
+export default function WeatherWidget({ request = null, onReport }: Props) {
   const [place, setPlace] = useState<Place>(() => {
     try {
       const saved = localStorage.getItem("weatherPlace");
@@ -132,6 +132,17 @@ export default function WeatherWidget({ request = null }: Props) {
     load();
     return () => controller.abort();
   }, [place, attempt]);
+
+  // Tell the rest of the app what the weather is (used by the briefing)
+  useEffect(() => {
+    if (status === "success" && weather) {
+      onReport?.({
+        place: place.name,
+        temperature: weather.temperature,
+        text: describe(weather.code, weather.isDay).text,
+      });
+    }
+  }, [status, weather, place, onReport]);
 
   // Look up a city and make it the current place
   async function runSearch(name: string) {

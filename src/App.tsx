@@ -8,11 +8,13 @@ import WeatherWidget from './components/WeatherWidget'
 import ExpensesWidget from './components/ExpensesWidget'
 import TodoWidget from './components/TodoWidget'
 import BudgetEditor from './components/BudgetEditor'
+import Briefing from './components/Briefing'
 import { useServerState } from './hooks/useServerState'
 import CommandBar from './components/CommandBar'
 import { DAILY_BUDGET, newId, peso, today } from './shared'
 import type { Expense, Todo } from './shared'
 import type { RunnableCommand } from './commands'
+import type { WeatherInfo } from './briefing'
 
 type Settings = { budgetPesos: number }
 
@@ -27,6 +29,7 @@ export default function App() {
     budgetPesos: DAILY_BUDGET / 100,
   })
   const [weatherRequest, setWeatherRequest] = useState<{ city: string; id: number } | null>(null)
+  const [weatherInfo, setWeatherInfo] = useState<WeatherInfo | null>(null)
 
   // Fall back to the default if the saved value is missing or invalid
   const budgetPesos =
@@ -122,9 +125,13 @@ export default function App() {
           </WidgetCard>
         </div>
 
+        <div className="boot-in mb-4" style={delay(250)}>
+          <Briefing weather={weatherInfo} spent={spent} budget={budget} todos={todos} />
+        </div>
+
         <div className="grid gap-4 md:grid-cols-3">
           <div className="boot-in [&>section]:h-full" style={delay(300)}>
-            <WeatherWidget request={weatherRequest} />
+            <WeatherWidget request={weatherRequest} onReport={setWeatherInfo} />
           </div>
           <div className="boot-in [&>section]:h-full" style={delay(500)}>
             <ExpensesWidget expenses={expenses} setExpenses={setExpenses} />
