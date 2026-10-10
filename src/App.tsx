@@ -7,25 +7,38 @@ import WidgetCard from './components/WidgetCard'
 import WeatherWidget from './components/WeatherWidget'
 import ExpensesWidget from './components/ExpensesWidget'
 import TodoWidget from './components/TodoWidget'
-import { useServerState } from './hooks/useServerState.ts'
+import BudgetEditor from './components/BudgetEditor'
+import { useServerState } from './hooks/useServerState'
 import CommandBar from './components/CommandBar'
 import { DAILY_BUDGET, newId, peso, today } from './shared'
 import type { Expense, Todo } from './shared'
 import type { RunnableCommand } from './commands'
 
+type Settings = { budgetPesos: number }
+
 const delay = (ms: number) => ({ '--delay': `${ms}ms` }) as CSSProperties
 const HELP =
-  'add expense 120 lunch · todo high pay internet · done internet · clear done · weather tokyo'
+  'add expense 120 lunch · todo high pay internet · done internet · clear done · weather tokyo · budget 800'
 
 export default function App() {
   const [expenses, setExpenses] = useServerState<Expense[]>('expenses', [])
   const [todos, setTodos] = useServerState<Todo[]>('todos', [])
+  const [settings, setSettings] = useServerState<Settings>('settings', {
+    budgetPesos: DAILY_BUDGET / 100,
+  })
   const [weatherRequest, setWeatherRequest] = useState<{ city: string; id: number } | null>(null)
+
+  // Fall back to the default if the saved value is missing or invalid
+  const budgetPesos =
+    Number.isFinite(settings.budgetPesos) && settings.budgetPesos > 0
+      ? settings.budgetPesos
+      : DAILY_BUDGET / 100
+  const budget = Math.round(budgetPesos * 100) // in centavos
 
   const spent = expenses
     .filter((e) => e.date === today())
     .reduce((sum, e) => sum + e.centavos, 0)
-  const budgetUsed = spent / DAILY_BUDGET
+  const budgetUsed = spent / budget
 
   const done = todos.filter((t) => t.done).length
   const missionsDone = todos.length ? done / todos.length : 0
@@ -65,6 +78,10 @@ export default function App() {
         setWeatherRequest({ city: cmd.city, id: Date.now() })
         return `Looking up weather for ${cmd.city}...`
 
+      case 'budget':
+        setSettings({ budgetPesos: cmd.pesos })
+        return `Daily budget set to ${peso.format(cmd.pesos)}`
+
       case 'help':
         return HELP
     }
@@ -88,7 +105,7 @@ export default function App() {
                 label="Budget used"
                 fraction={budgetUsed}
                 centerText={`${Math.round(budgetUsed * 100)}%`}
-                detail={`${peso.format(spent / 100)} of ${peso.format(DAILY_BUDGET / 100)}`}
+                detail={`${peso.format(spent / 100)} of ${peso.format(budget / 100)}`}
                 tone={budgetUsed >= 1 ? 'danger' : budgetUsed >= 0.8 ? 'warn' : 'ok'}
               />
               <Gauge
@@ -98,6 +115,10 @@ export default function App() {
                 detail={todos.length ? `${done} of ${todos.length} tasks` : 'No tasks yet'}
               />
             </div>
+            <BudgetEditor
+              pesos={budgetPesos}
+              onSave={(pesos) => setSettings({ budgetPesos: pesos })}
+            />
           </WidgetCard>
         </div>
 

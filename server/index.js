@@ -8,7 +8,7 @@ const DATA_DIR = path.join(__dirname, 'data')
 const DATA_FILE = path.join(DATA_DIR, 'db.json')
 
 // Only these names can be stored. Anything else is rejected.
-const ALLOWED_KEYS = new Set(['expenses', 'todos'])
+const ALLOWED_KEYS = new Set(['expenses', 'todos', 'settings'])
 
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
@@ -43,7 +43,14 @@ app.put('/api/data/:key', (req, res) => {
   const { key } = req.params
   if (!ALLOWED_KEYS.has(key)) return res.status(404).json({ error: 'Unknown key' })
   const { value } = req.body ?? {}
-  if (!Array.isArray(value)) return res.status(400).json({ error: 'Value must be a list' })
+
+  // Settings are an object. Expenses and todos are lists.
+  const isList = Array.isArray(value)
+  const isObject = value !== null && typeof value === 'object' && !isList
+  if (key === 'settings' ? !isObject : !isList) {
+    return res.status(400).json({ error: 'Invalid value' })
+  }
+
   db[key] = value
   save()
   res.json({ ok: true })

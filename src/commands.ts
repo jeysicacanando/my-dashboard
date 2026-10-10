@@ -5,6 +5,7 @@ export type Command =
   | { type: 'todo'; text: string; priority: Priority }
   | { type: 'done'; query: string }
   | { type: 'weather'; city: string }
+  | { type: 'budget'; pesos: number }
   | { type: 'clear-done' }
   | { type: 'help' }
   | { type: 'error'; message: string }
@@ -20,6 +21,14 @@ export function parseCommand(input: string): Command {
 
   if (/^(help|\?)$/i.test(text)) return { type: 'help' }
   if (/^clear done$/i.test(text)) return { type: 'clear-done' }
+
+  const budget = text.match(/^(?:set )?budget (\d+(?:\.\d{1,2})?)$/i)
+  if (budget) {
+    const pesos = parseFloat(budget[1])
+    if (pesos <= 0) return { type: 'error', message: 'Budget must be more than zero.' }
+    if (pesos > MAX_CENTAVOS / 100) return { type: 'error', message: 'That amount is too large.' }
+    return { type: 'budget', pesos }
+  }
 
   const amountFirst = text.match(/^(?:add )?(?:expense|spent) (\d+(?:\.\d{1,2})?) (.+)$/i)
   const labelFirst = text.match(/^(?:add )?(?:expense|spent) (.+?) (\d+(?:\.\d{1,2})?)$/i)
