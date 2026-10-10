@@ -3,13 +3,43 @@ import type { FormEvent } from "react";
 import WidgetCard from "./WidgetCard";
 
 type Place = { name: string; lat: number; lon: number };
-type Weather = { temperature: number; windspeed: number };
+type HourItem = { time: string; temp: number; code: number; isDay: boolean };
+type Weather = {
+  temperature: number;
+  windspeed: number;
+  code: number;
+  isDay: boolean;
+  hours: HourItem[];
+};
 type Status = "loading" | "error" | "success";
 
 const DEFAULT_PLACE: Place = { name: "Home", lat: 14.85, lon: 121.08 };
 
+// Open-Meteo sends a number code for the weather. This turns it into words and an icon.
+function describe(code: number, isDay: boolean): { icon: string; text: string } {
+  if (code === 0) return { icon: isDay ? "☀️" : "🌙", text: "Clear sky" };
+  if (code === 1) return { icon: isDay ? "🌤️" : "🌙", text: "Mostly clear" };
+  if (code === 2) return { icon: "⛅", text: "Partly cloudy" };
+  if (code === 3) return { icon: "☁️", text: "Overcast" };
+  if (code === 45 || code === 48) return { icon: "🌫️", text: "Foggy" };
+  if (code >= 51 && code <= 57) return { icon: "🌦️", text: "Drizzle" };
+  if (code >= 61 && code <= 67) return { icon: "🌧️", text: "Rain" };
+  if (code >= 71 && code <= 77) return { icon: "❄️", text: "Snow" };
+  if (code >= 80 && code <= 82) return { icon: "🌧️", text: "Rain showers" };
+  if (code === 85 || code === 86) return { icon: "🌨️", text: "Snow showers" };
+  if (code >= 95) return { icon: "⛈️", text: "Thunderstorm" };
+  return { icon: "🌡️", text: "Unknown" };
+}
+
 export default function WeatherWidget() {
-  const [place, setPlace] = useState<Place>(DEFAULT_PLACE);
+  const [place, setPlace] = useState<Place>(() => {
+  try {
+    const saved = localStorage.getItem("weatherPlace");
+    return saved ? (JSON.parse(saved) as Place) : DEFAULT_PLACE;
+  } catch {
+    return DEFAULT_PLACE;
+  }
+});
   const [status, setStatus] = useState<Status>("loading");
   const [weather, setWeather] = useState<Weather | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -18,7 +48,14 @@ export default function WeatherWidget() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
-  // Fetch the weather whenever the place changes (or Try again is clicked)
+  useEffect(() => {
+  try {
+    localStorage.setItem("weatherPlace", JSON.stringify(place));
+  } catch {
+    // storage unavailable, ignore
+  }
+}, [place]);
+
   useEffect(() => {
     const controller = new AbortController();
     setStatus("loading");
@@ -27,13 +64,40 @@ export default function WeatherWidget() {
       try {
         const url =
           `https://api.open-meteo.com/v1/forecast` +
-          `?latitude=${place.lat}&longitude=${place.lon}&current_weather=true`;
+          `?latitude=${place.lat}&longitude=${place.lon}` +
+          `&current_weather=true` +
+          `&hourly=temperature_2m,weathercode` +
+          `&timezone=auto&forecast_days=2`;
         const res = await fetch(url, { signal: controller.signal });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+
+        const cw = data.current_weather;
+
+        // Find where "this hour" is in the hourly list, then take the next 6 hours.
+        // Times look like "2026-10-10T14:00", so plain text comparison works.
+        const nowHour = String(cw.time).slice(0, 13) + ":00";
+        const times: string[] = data.hourly.time;
+        let start = times.findIndex((t) => t >= nowHour);
+        if (start === -1) start = 0;
+
+        const hours: HourItem[] = [];
+        for (let i = start + 1; i <= start + 6 && i < times.length; i++) {
+          const hour = Number(times[i].slice(11, 13));
+          hours.push({
+            time: times[i],
+            temp: data.hourly.temperature_2m[i],
+            code: data.hourly.weathercode[i],
+            isDay: hour >= 6 && hour < 18,
+          });
+        }
+
         setWeather({
-          temperature: data.current_weather.temperature,
-          windspeed: data.current_weather.windspeed,
+          temperature: cw.temperature,
+          windspeed: cw.windspeed,
+          code: cw.weathercode,
+          isDay: cw.is_day === 1,
+          hours,
         });
         setStatus("success");
       } catch (err) {
@@ -81,6 +145,8 @@ export default function WeatherWidget() {
     }
   }
 
+  const now = weather ? describe(weather.code, weather.isDay) : null;
+
   return (
     <WidgetCard title="Weather">
       <form onSubmit={handleSearch} className="mb-3 flex gap-2">
@@ -123,12 +189,42 @@ export default function WeatherWidget() {
         </div>
       )}
 
-      {status === "success" && weather && (
+      {status === "success" && weather && now && (
         <>
-          <p className="mt-1 text-3xl font-bold">{weather.temperature}°C</p>
+          <div className="mt-1 flex items-center gap-3">
+            <span className="text-4xl" aria-hidden="true">
+              {now.icon}
+            </span>
+            <div>
+              <p className="text-3xl font-bold leading-none">
+                {weather.temperature}°C
+              </p>
+              <p className="mt-1 text-sm">{now.text}</p>
+            </div>
+          </div>
+
           <p className="mt-1 text-sm opacity-70">
             Wind: {weather.windspeed} km/h
           </p>
+
+          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-line pt-3 sm:grid-cols-6">
+            {weather.hours.map((h) => {
+              const d = describe(h.code, h.isDay);
+              return (
+                <div key={h.time} className="text-center">
+                  <p className="text-[10px] uppercase opacity-70">
+                    {new Date(h.time).toLocaleTimeString([], {
+                      hour: "numeric",
+                    })}
+                  </p>
+                  <p className="text-lg" title={d.text}>
+                    {d.icon}
+                  </p>
+                  <p className="text-xs">{Math.round(h.temp)}°</p>
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
     </WidgetCard>
