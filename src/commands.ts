@@ -4,6 +4,7 @@ export type Command =
   | { type: 'expense'; centavos: number; label: string }
   | { type: 'todo'; text: string; priority: Priority }
   | { type: 'done'; query: string }
+  | { type: 'weather'; city: string }
   | { type: 'clear-done' }
   | { type: 'help' }
   | { type: 'error'; message: string }
@@ -44,6 +45,12 @@ export function parseCommand(input: string): Command {
 
   const done = text.match(/^done (.+)$/i)
   if (done) return { type: 'done', query: done[1] }
+
+  const weather = text.match(/^weather (.+)$/i)
+  if (weather) {
+    if (weather[1].length > MAX_TEXT) return { type: 'error', message: 'City name is too long.' }
+    return { type: 'weather', city: weather[1] }
+  }
 
   return { type: 'error', message: 'Unknown command. Try: add expense 120 lunch' }
 }

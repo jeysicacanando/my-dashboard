@@ -13,9 +13,14 @@ type Weather = {
 };
 type Status = "loading" | "error" | "success";
 
+// App.tsx sends one of these when you type "weather <city>" in the command bar.
+// The id changes every time, so asking for the same city twice still works.
+type Props = {
+  request?: { city: string; id: number } | null;
+};
+
 const DEFAULT_PLACE: Place = { name: "Home", lat: 14.85, lon: 121.08 };
 
-// Open-Meteo sends a number code for the weather. This turns it into words and an icon.
 function describe(code: number, isDay: boolean): { icon: string; text: string } {
   if (code === 0) return { icon: isDay ? "☀️" : "🌙", text: "Clear sky" };
   if (code === 1) return { icon: isDay ? "🌤️" : "🌙", text: "Mostly clear" };
@@ -31,15 +36,34 @@ function describe(code: number, isDay: boolean): { icon: string; text: string } 
   return { icon: "🌡️", text: "Unknown" };
 }
 
-export default function WeatherWidget() {
-  const [place, setPlace] = useState<Place>(() => {
-  try {
-    const saved = localStorage.getItem("weatherPlace");
-    return saved ? (JSON.parse(saved) as Place) : DEFAULT_PLACE;
-  } catch {
-    return DEFAULT_PLACE;
+// Turns a city name into a Place. Throws an Error with a readable message on failure.
+async function findCity(name: string): Promise<Place> {
+  const url =
+    `https://geocoding-api.open-meteo.com/v1/search` +
+    `?name=${encodeURIComponent(name)}&count=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Search failed. Check your connection.");
+  const data = await res.json();
+  if (!data.results || data.results.length === 0) {
+    throw new Error(`No city found for "${name}"`);
   }
-});
+  const r = data.results[0];
+  return {
+    name: r.country ? `${r.name}, ${r.country}` : r.name,
+    lat: r.latitude,
+    lon: r.longitude,
+  };
+}
+
+export default function WeatherWidget({ request = null }: Props) {
+  const [place, setPlace] = useState<Place>(() => {
+    try {
+      const saved = localStorage.getItem("weatherPlace");
+      return saved ? (JSON.parse(saved) as Place) : DEFAULT_PLACE;
+    } catch {
+      return DEFAULT_PLACE;
+    }
+  });
   const [status, setStatus] = useState<Status>("loading");
   const [weather, setWeather] = useState<Weather | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -48,14 +72,16 @@ export default function WeatherWidget() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
+  // Save the place whenever it changes
   useEffect(() => {
-  try {
-    localStorage.setItem("weatherPlace", JSON.stringify(place));
-  } catch {
-    // storage unavailable, ignore
-  }
-}, [place]);
+    try {
+      localStorage.setItem("weatherPlace", JSON.stringify(place));
+    } catch {
+      // storage unavailable, ignore
+    }
+  }, [place]);
 
+  // Fetch the weather whenever the place changes (or Try again is clicked)
   useEffect(() => {
     const controller = new AbortController();
     setStatus("loading");
@@ -73,9 +99,6 @@ export default function WeatherWidget() {
         const data = await res.json();
 
         const cw = data.current_weather;
-
-        // Find where "this hour" is in the hourly list, then take the next 6 hours.
-        // Times look like "2026-10-10T14:00", so plain text comparison works.
         const nowHour = String(cw.time).slice(0, 13) + ":00";
         const times: string[] = data.hourly.time;
         let start = times.findIndex((t) => t >= nowHour);
@@ -110,40 +133,32 @@ export default function WeatherWidget() {
     return () => controller.abort();
   }, [place, attempt]);
 
-  // Turn a city name into coordinates
-  async function handleSearch(e: FormEvent) {
-    e.preventDefault();
-    const name = query.trim();
-    if (!name) return;
-
+  // Look up a city and make it the current place
+  async function runSearch(name: string) {
     setSearching(true);
     setSearchError("");
     try {
-      const url =
-        `https://geocoding-api.open-meteo.com/v1/search` +
-        `?name=${encodeURIComponent(name)}&count=1`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-
-      if (!data.results || data.results.length === 0) {
-        setSearchError(`No city found for "${name}"`);
-        return;
-      }
-
-      const r = data.results[0];
-      setPlace({
-        name: r.country ? `${r.name}, ${r.country}` : r.name,
-        lat: r.latitude,
-        lon: r.longitude,
-      });
+      setPlace(await findCity(name));
       setQuery("");
-    } catch {
-      setSearchError("Search failed. Check your connection.");
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Search failed.");
     } finally {
       setSearching(false);
     }
   }
+
+  // The search box in the card
+  function handleSearch(e: FormEvent) {
+    e.preventDefault();
+    const name = query.trim();
+    if (name) runSearch(name);
+  }
+
+  // A "weather <city>" command from the command bar
+  useEffect(() => {
+    if (request) runSearch(request.city);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request]);
 
   const now = weather ? describe(weather.code, weather.isDay) : null;
 
