@@ -7,7 +7,7 @@ import WidgetCard from './components/WidgetCard'
 import WeatherWidget from './components/WeatherWidget'
 import ExpensesWidget from './components/ExpensesWidget'
 import TodoWidget from './components/TodoWidget'
-import { useLocalStorage } from './hooks/useLocalStorage'
+import { useServerState } from './hooks/useServerState.ts'
 import CommandBar from './components/CommandBar'
 import { DAILY_BUDGET, newId, peso, today } from './shared'
 import type { Expense, Todo } from './shared'
@@ -18,8 +18,8 @@ const HELP =
   'add expense 120 lunch · todo high pay internet · done internet · clear done · weather tokyo'
 
 export default function App() {
-  const [expenses, setExpenses] = useLocalStorage<Expense[]>('expenses', [])
-  const [todos, setTodos] = useLocalStorage<Todo[]>('todos', [])
+  const [expenses, setExpenses] = useServerState<Expense[]>('expenses', [])
+  const [todos, setTodos] = useServerState<Todo[]>('todos', [])
   const [weatherRequest, setWeatherRequest] = useState<{ city: string; id: number } | null>(null)
 
   const spent = expenses
